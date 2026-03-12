@@ -4,6 +4,7 @@ console.log("Körjournal startad");
 const toggleBtn = document.getElementById('toggle-btn');
 const timeDisplay = document.getElementById('current-time');
 const distanceDisplay = document.getElementById('current-distance');
+const speedDisplay = document.getElementById('current-speed');
 const tripList = document.getElementById('trip-list');
 const dimmerOverlay = document.getElementById('dimmer-overlay');
 
@@ -28,6 +29,7 @@ function startTrip() {
     startTime = Date.now();
     totalDistance = 0;
     lastPosition = null;
+    speedDisplay.textContent = '0';
 
     // UI Uppdatering
     toggleBtn.textContent = 'STOPPA';
@@ -72,6 +74,7 @@ function stopTrip() {
     isRunning = false;
     clearInterval(timerInterval);
     if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    speedDisplay.textContent = '0';
 
     // Släpp Wake Lock
     if (wakeLock !== null) {
@@ -97,8 +100,8 @@ function updateTimer() {
 }
 
 function handlePosition(position) {
-    const { latitude, longitude, accuracy } = position.coords;
-    console.log(`Position: ${latitude}, ${longitude} (Noggrannhet: ${accuracy}m)`);
+    const { latitude, longitude, accuracy, speed } = position.coords;
+    console.log(`Position: ${latitude}, ${longitude} (Noggrannhet: ${accuracy}m, Hastighet: ${speed} m/s)`);
 
     if (lastPosition) {
         const dist = calculateDistance(
@@ -110,10 +113,25 @@ function handlePosition(position) {
         if (accuracy < 30 || dist < 0.2) {
             totalDistance += dist;
             distanceDisplay.textContent = totalDistance.toFixed(2);
+            
+            // Beräkna hastighet som fallback
+            if (speed === null || speed === undefined) {
+                const timeDiff = (Date.now() - lastPosition.timestamp) / 3600000; // timmar
+                if (timeDiff > 0 && dist > 0.005) {
+                    const calcSpeed = Math.round(dist / timeDiff);
+                    if (calcSpeed < 250) speedDisplay.textContent = calcSpeed;
+                }
+            }
         }
     }
 
-    lastPosition = { latitude, longitude };
+    if (speed !== null && speed !== undefined) {
+        speedDisplay.textContent = Math.round(speed * 3.6);
+    } else if (!lastPosition) {
+        speedDisplay.textContent = '0';
+    }
+
+    lastPosition = { latitude, longitude, timestamp: Date.now() };
 }
 
 function handleError(error) {
@@ -151,15 +169,16 @@ function saveTrip() {
     trips.unshift(trip);
     localStorage.setItem('trips', JSON.stringify(trips));
 
-    renderTrips();
+    renderTrips(trip.timestamp);
 }
 
-function renderTrips() {
+function renderTrips(newItemTimestamp = null) {
     const trips = JSON.parse(localStorage.getItem('trips') || '[]');
     tripList.innerHTML = trips.map(t => {
         const spanTime = (t.startClock && t.endClock) ? ` kl ${t.startClock}-${t.endClock}` : '';
+        const animationClass = t.timestamp === newItemTimestamp ? ' animate-in' : '';
         return `
-        <li class="trip-item">
+        <li class="trip-item${animationClass}">
             <div class="trip-info">
                 <strong>${t.date}${spanTime}</strong><br>
                 <small>${t.time}</small>

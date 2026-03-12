@@ -1,6 +1,7 @@
 :root {
-    --bg-color: #121212;
-    --card-bg: #1e1e1e;
+    --bg-gradient: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    --card-bg: rgba(30, 30, 30, 0.5);
+    --card-border: rgba(255, 255, 255, 0.08);
     --text-primary: #ffffff;
     --text-secondary: #b0b0b0;
     --accent-start: #4CAF50;
@@ -15,7 +16,8 @@
 }
 
 body {
-    background-color: var(--bg-color);
+    background: var(--bg-gradient);
+    background-attachment: fixed;
     color: var(--text-primary);
     font-family: var(--font-main);
     line-height: 1.6;
@@ -49,12 +51,24 @@ h1 {
     margin-bottom: 2rem;
 }
 
+.speed-box {
+    grid-column: span 2;
+}
+
+.speed-box span:not(.label) {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
 .stat-box {
     background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--card-border);
     padding: 1.5rem;
     border-radius: 12px;
     text-align: center;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
 }
 
 .stat-box .label {
@@ -98,6 +112,7 @@ h1 {
 
 #toggle-btn.start {
     background-color: var(--accent-start);
+    animation: pulse-glow 2s infinite;
 }
 
 #toggle-btn.stop {
@@ -120,6 +135,9 @@ h2 {
 
 .trip-item {
     background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--card-border);
     padding: 0.75rem 1rem;
     border-radius: 8px;
     margin-bottom: 0.5rem;
@@ -177,4 +195,31 @@ h2 {
 
 .hidden {
     display: none;
+}
+
+@keyframes pulse-glow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 20px rgba(76, 175, 80, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    }
+}
+
+@keyframes slide-in-bottom {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-in {
+    animation: slide-in-bottom 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
