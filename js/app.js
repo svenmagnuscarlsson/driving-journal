@@ -164,13 +164,31 @@ function renderTrips() {
                 <strong>${t.date}${spanTime}</strong><br>
                 <small>${t.time}</small>
             </div>
-            <div class="trip-dist">
-                ${t.distance} km
+            <div class="trip-dist-container">
+                <div class="trip-dist">${t.distance} km</div>
+                <button class="delete-btn" data-timestamp="${t.timestamp}" title="Ta bort resa">×</button>
             </div>
         </li>
         `;
     }).join('');
 }
+
+function deleteTrip(timestamp) {
+    if (confirm("Vill du ta bort denna resa?")) {
+        const trips = JSON.parse(localStorage.getItem('trips') || '[]');
+        const updatedTrips = trips.filter(t => t.timestamp !== parseInt(timestamp));
+        localStorage.setItem('trips', JSON.stringify(updatedTrips));
+        renderTrips();
+    }
+}
+
+// Hantera klick på listan (för t.ex. Ta bort-knapp)
+tripList.addEventListener('click', (e) => {
+    if (e.target.classList.contains('delete-btn')) {
+        const timestamp = e.target.getAttribute('data-timestamp');
+        deleteTrip(timestamp);
+    }
+});
 
 // Hantera om fliken blir synlig igen (behöver återansöka Wake Lock)
 document.addEventListener('visibilitychange', async () => {

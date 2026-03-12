@@ -125,6 +125,28 @@ h2 {
     margin-bottom: 0.5rem;
     display: flex;
     justify-content: space-between;
+    align-items: center;
+}
+
+.trip-dist-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 0.5rem;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.delete-btn:hover {
+    color: var(--accent-stop);
 }
 
 #dimmer-overlay {
