@@ -132,11 +132,19 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 function saveTrip() {
+    const startObj = new Date(startTime);
+    const endObj = new Date();
+    
+    const startClock = startObj.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+    const endClock = endObj.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+
     const trip = {
         date: new Date().toLocaleDateString('sv-SE'),
         time: timeDisplay.textContent,
         distance: distanceDisplay.textContent,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        startClock: startClock,
+        endClock: endClock
     };
 
     const trips = JSON.parse(localStorage.getItem('trips') || '[]');
@@ -148,17 +156,20 @@ function saveTrip() {
 
 function renderTrips() {
     const trips = JSON.parse(localStorage.getItem('trips') || '[]');
-    tripList.innerHTML = trips.map(t => `
+    tripList.innerHTML = trips.map(t => {
+        const spanTime = (t.startClock && t.endClock) ? ` kl ${t.startClock}-${t.endClock}` : '';
+        return `
         <li class="trip-item">
             <div class="trip-info">
-                <strong>${t.date}</strong><br>
+                <strong>${t.date}${spanTime}</strong><br>
                 <small>${t.time}</small>
             </div>
             <div class="trip-dist">
                 ${t.distance} km
             </div>
         </li>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // Hantera om fliken blir synlig igen (behöver återansöka Wake Lock)
