@@ -217,8 +217,6 @@ function startTrip() {
 
     toggleBtn.textContent = 'STOPPA';
     toggleBtn.classList.replace('start', 'stop');
-    dimmerOverlay.classList.remove('hidden');
-    dimmerOverlay.classList.add('active');
 
     timerInterval = setInterval(updateTimer, 1000);
 
@@ -267,8 +265,6 @@ function stopTrip() {
 
     toggleBtn.textContent = 'STARTA';
     toggleBtn.classList.replace('stop', 'start');
-    dimmerOverlay.classList.remove('active');
-    setTimeout(() => dimmerOverlay.classList.add('hidden'), 1000);
 
     saveTrip();
 }
@@ -344,7 +340,7 @@ tripList.addEventListener('click', (e) => {
 
 // Återansök Wake Lock vid flikbyte
 document.addEventListener('visibilitychange', async () => {
-    if (wakeLock !== null && document.visibilityState === 'visible') {
+    if (isRunning && document.visibilityState === 'visible') {
         await requestWakeLock();
     }
 });
