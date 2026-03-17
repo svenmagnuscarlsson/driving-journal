@@ -30,8 +30,8 @@ function initKalman(lat, lon, accuracy) {
     return {
         lat,
         lon,
-        // Processvariation (rörelseosäkerhet) – justeras per GPS-noggrannhet
-        Q: 3e-6,
+        // Processvariation (rörelseosäkerhet) – högre värde = mer responsivt i kurvor
+        Q: 1e-5,
         // Mätosäkerhet (konverteras från meter till grader ~1°≈111km)
         R: Math.pow(accuracy / 111000, 2),
         // Estimatets kovarians
@@ -149,15 +149,17 @@ function handlePosition(position) {
     const speedKmh = (speed !== null && speed !== undefined) ? speed * 3.6 : null;
     const isStationary = speedKmh !== null && speedKmh < 2.0;
 
+    let distanceCounted = false;
+
     if (lastPosition && !isStationary) {
         const dist = calculateDistance(
             lastPosition.latitude, lastPosition.longitude,
             filtered.lat, filtered.lon
         );
 
-        // 4. Dynamisk tröskel: kräv att noggrannheten är bättre än rörelsen
-        //    och att rörelsen är minst 5m (0,005 km) för att undvika GPS-brus
-        const minDistKm = Math.max(accuracy * 2, 5) / 1000;
+        // 4. Dynamisk tröskel: kräv rimlig rörelse relativt noggrannheten
+        //    Lägre tröskel (accuracy * 0.5, min 3m) för att inte tappa sträcka
+        const minDistKm = Math.max(accuracy * 0.5, 3) / 1000;
 
         if (dist >= minDistKm) {
             // 5. Rimlighetskontroll: max 200 km/h → max rörelse per sekund
@@ -166,6 +168,7 @@ function handlePosition(position) {
             if (impliedSpeedKmh < 200) {
                 totalDistance += dist;
                 distanceDisplay.textContent = totalDistance.toFixed(2);
+                distanceCounted = true;
             } else {
                 console.warn(`Orealistiskt hopp ignoreras: ${impliedSpeedKmh.toFixed(0)} km/h`);
             }
@@ -188,11 +191,15 @@ function handlePosition(position) {
         speedDisplay.textContent = '0';
     }
 
-    lastPosition = {
-        latitude:  filtered.lat,
-        longitude: filtered.lon,
-        timestamp: Date.now()
-    };
+    // KRITISKT: Uppdatera lastPosition BARA när sträckan faktiskt räknades,
+    // eller vid första mätningen. Annars förloras små rörelser permanent.
+    if (distanceCounted || !lastPosition) {
+        lastPosition = {
+            latitude:  filtered.lat,
+            longitude: filtered.lon,
+            timestamp: Date.now()
+        };
+    }
 
     console.log(
         `GPS: ${filtered.lat.toFixed(6)}, ${filtered.lon.toFixed(6)} ` +
