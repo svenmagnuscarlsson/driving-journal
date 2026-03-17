@@ -145,6 +145,25 @@ h2 {
     justify-content: space-between;
     align-items: center;
     font-size: 0.9rem;
+    cursor: grab;
+    user-select: none;
+    transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+
+.trip-item:active {
+    cursor: grabbing;
+}
+
+.trip-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.trip-item.drag-over {
+    border: 2px dashed var(--accent-start);
+    background: rgba(76, 175, 80, 0.1);
+    transform: scale(1.02);
 }
 
 .trip-info strong {
@@ -193,9 +212,6 @@ h2 {
     opacity: 1;
 }
 
-.hidden {
-    display: none;
-}
 
 @keyframes pulse-glow {
     0% {
@@ -222,4 +238,91 @@ h2 {
 
 .animate-in {
     animation: slide-in-bottom 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* ─── Modal Styles ─────────────────────────────────────────────────────────── */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    transition: opacity 0.3s;
+}
+
+.modal-content {
+    background: rgba(40, 44, 52, 0.95);
+    border: 1px solid var(--card-border);
+    padding: 2rem;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    text-align: center;
+}
+
+.modal-content h3 {
+    margin-bottom: 0.5rem;
+    font-weight: 400;
+}
+
+.modal-content p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+#merge-name-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    color: white;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    outline: none;
+}
+
+#merge-name-input:focus {
+    border-color: var(--accent-start);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.modal-actions button {
+    flex: 1;
+    padding: 0.8rem;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+
+.primary-btn {
+    background: var(--accent-start);
+    color: white;
+}
+
+.secondary-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.modal-actions button:hover {
+    filter: brightness(1.1);
+}
+
+.hidden {
+    display: none !important;
 }

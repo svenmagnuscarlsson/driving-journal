@@ -7,6 +7,10 @@ const distanceDisplay = document.getElementById('current-distance');
 const speedDisplay    = document.getElementById('current-speed');
 const tripList        = document.getElementById('trip-list');
 const dimmerOverlay   = document.getElementById('dimmer-overlay');
+const mergeModal      = document.getElementById('merge-modal');
+const mergeNameInput  = document.getElementById('merge-name-input');
+const mergeCancelBtn  = document.getElementById('merge-cancel-btn');
+const mergeSaveBtn    = document.getElementById('merge-save-btn');
 
 let isRunning    = false;
 let startTime    = null;
@@ -15,6 +19,8 @@ let watchId      = null;
 let totalDistance = 0;
 let lastPosition = null;
 let wakeLock     = null;
+let draggedTripId = null;
+let mergeTargetId = null;
 
 // ─── Kalman-filter state ─────────────────────────────────────────────────────
 // En enkel 1D Kalman-filter per koordinat
@@ -305,12 +311,14 @@ function saveTrip() {
 function renderTrips(newItemTimestamp = null) {
     const trips = JSON.parse(localStorage.getItem('trips') || '[]');
     tripList.innerHTML = trips.map(t => {
-        const spanTime      = (t.startClock && t.endClock) ? ` kl ${t.startClock}-${t.endClock}` : '';
+        const spanTime       = (t.startClock && t.endClock) ? ` kl ${t.startClock}-${t.endClock}` : '';
         const animationClass = t.timestamp === newItemTimestamp ? ' animate-in' : '';
+        const displayName    = t.name ? `<strong>${t.name}</strong><br><small>${t.date}${spanTime}</small>` : `<strong>${t.date}${spanTime}</strong>`;
+        
         return `
-        <li class="trip-item${animationClass}">
+        <li class="trip-item${animationClass}" draggable="true" data-timestamp="${t.timestamp}">
             <div class="trip-info">
-                <strong>${t.date}${spanTime}</strong><br>
+                ${displayName}<br>
                 <small>${t.time}</small>
             </div>
             <div class="trip-dist-container">
@@ -337,6 +345,130 @@ tripList.addEventListener('click', (e) => {
         deleteTrip(e.target.getAttribute('data-timestamp'));
     }
 });
+
+// Drag and Drop
+tripList.addEventListener('dragstart', (e) => {
+    const item = e.target.closest('.trip-item');
+    if (item) {
+        draggedTripId = parseInt(item.getAttribute('data-timestamp'));
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    }
+});
+
+tripList.addEventListener('dragend', (e) => {
+    const item = e.target.closest('.trip-item');
+    if (item) item.classList.remove('dragging');
+    document.querySelectorAll('.trip-item').forEach(i => i.classList.remove('drag-over'));
+});
+
+tripList.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const item = e.target.closest('.trip-item');
+    if (item && draggedTripId && parseInt(item.getAttribute('data-timestamp')) !== draggedTripId) {
+        item.classList.add('drag-over');
+        e.dataTransfer.dropEffect = 'move';
+    }
+});
+
+tripList.addEventListener('dragleave', (e) => {
+    const item = e.target.closest('.trip-item');
+    if (item) item.classList.remove('drag-over');
+});
+
+tripList.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const item = e.target.closest('.trip-item');
+    if (item && draggedTripId) {
+        mergeTargetId = parseInt(item.getAttribute('data-timestamp'));
+        if (mergeTargetId !== draggedTripId) {
+            showMergeModal();
+        }
+    }
+});
+
+// Modal events
+mergeCancelBtn.addEventListener('click', hideMergeModal);
+mergeSaveBtn.addEventListener('click', handleMergeSave);
+mergeNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleMergeSave();
+});
+
+function handleMergeSave() {
+    const name = mergeNameInput.value.trim();
+    if (name) {
+        executeMerge(name);
+    } else {
+        alert("Vänligen ange ett namn för resan.");
+    }
+}
+
+function showMergeModal() {
+    mergeModal.classList.remove('hidden');
+    mergeNameInput.value = '';
+    mergeNameInput.focus();
+}
+
+function hideMergeModal() {
+    mergeModal.classList.add('hidden');
+    draggedTripId = null;
+    mergeTargetId = null;
+}
+
+function executeMerge(name) {
+    const trips = JSON.parse(localStorage.getItem('trips') || '[]');
+    const t1 = trips.find(t => t.timestamp === draggedTripId);
+    const t2 = trips.find(t => t.timestamp === mergeTargetId);
+
+    if (!t1 || !t2) return;
+
+    // Beräkna ny distans
+    const totalDist = (parseFloat(t1.distance) + parseFloat(t2.distance)).toFixed(2);
+
+    // Beräkna ny tid
+    const totalSeconds = timeToSeconds(t1.time) + timeToSeconds(t2.time);
+    const totalDuration = secondsToTime(totalSeconds);
+
+    // Hantera datum och klockslag (sortera efter timestamp)
+    const sorted = [t1, t2].sort((a, b) => a.timestamp - b.timestamp);
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+
+    const mergedDate = first.date === last.date ? first.date : `${first.date} - ${last.date}`;
+    
+    const mergedTrip = {
+        name: name,
+        date: mergedDate,
+        time: totalDuration,
+        distance: totalDist,
+        timestamp: Date.now(),
+        startClock: first.startClock,
+        endClock: last.endClock
+    };
+
+    // Uppdatera listan
+    const updatedTrips = trips.filter(t => t.timestamp !== draggedTripId && t.timestamp !== mergeTargetId);
+    updatedTrips.unshift(mergedTrip);
+    localStorage.setItem('trips', JSON.stringify(updatedTrips));
+
+    hideMergeModal();
+    renderTrips(mergedTrip.timestamp);
+}
+
+function timeToSeconds(timeStr) {
+    const parts = timeStr.split(':').map(Number);
+    if (parts.length === 3) {
+        return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    }
+    return 0;
+}
+
+function secondsToTime(seconds) {
+    const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+    const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+    const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
+}
 
 // Återansök Wake Lock vid flikbyte
 document.addEventListener('visibilitychange', async () => {

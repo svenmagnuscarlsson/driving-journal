@@ -43,6 +43,19 @@
         </main>
 
         <div id="dimmer-overlay" class="hidden"></div>
+        
+        <!-- Modal för att namnge sammanslagen resa -->
+        <div id="merge-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h3>Namnge resa</h3>
+                <p>Ge din sammanslagna resa ett namn för att spara den.</p>
+                <input type="text" id="merge-name-input" placeholder="Ex: Morgonpendling" autofocus>
+                <div class="modal-actions">
+                    <button id="merge-cancel-btn" class="secondary-btn">Avbryt</button>
+                    <button id="merge-save-btn" class="primary-btn">Spara</button>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="js/app.js"></script>
 </body>
